@@ -5,6 +5,8 @@ import uuid
 from concurrent.futures import Future
 from typing import Any, Callable, Dict, Optional, Union
 
+import typeguard
+
 from parsl.errors import OptionalModuleMissing
 from parsl.executors.base import ParslExecutor
 from parsl.utils import RepresentationMixin
@@ -36,6 +38,7 @@ class GlobusComputeExecutor(ParslExecutor, RepresentationMixin):
 
     """
 
+    @typeguard.typechecked
     def __init__(
             self,
             endpoint_id: UUID_LIKE_T,
