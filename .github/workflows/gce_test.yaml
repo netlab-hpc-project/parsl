@@ -80,7 +80,6 @@ jobs:
         export GLOBUS_COMPUTE_ENDPOINT=$(globus-compute-endpoint list | grep default | cut -c 3-38) 
         echo "GLOBUS_COMPUTE_ENDPOINT = $GLOBUS_COMPUTE_ENDPOINT"
 
-        # temporary; until test-matrixification
         export PARSL_TEST_PRESERVE_NUM_RUNS=7
 
         make gce_test
