@@ -76,7 +76,7 @@ class GlobusComputeExecutor(ParslExecutor, RepresentationMixin):
             )
 
         super().__init__()
-        self._executor: Executor = executor
+        self.executor: Executor = executor
         self.resource_specification = resource_specification
         self.user_endpoint_config = user_endpoint_config
         self.label = label
@@ -119,9 +119,9 @@ class GlobusComputeExecutor(ParslExecutor, RepresentationMixin):
         else:
             user_endpoint_config = self.user_endpoint_config
 
-        self._executor.resource_specification = res_spec
-        self._executor.user_endpoint_config = user_endpoint_config
-        return self._executor.submit(func, *args, **kwargs)
+        self.executor.resource_specification = res_spec
+        self.executor.user_endpoint_config = user_endpoint_config
+        return self.executor.submit(func, *args, **kwargs)
 
     def shutdown(self):
         """Clean-up the resources associated with the Executor.
@@ -129,4 +129,4 @@ class GlobusComputeExecutor(ParslExecutor, RepresentationMixin):
         GCE.shutdown will cancel all futures that have not yet registered with
         Globus Compute and will not wait for the launched futures to complete.
         """
-        self._executor.shutdown(wait=False, cancel_futures=True)
+        self.executor.shutdown(wait=False, cancel_futures=True)
