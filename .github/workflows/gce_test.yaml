@@ -6,6 +6,9 @@ on:
       - opened
       - synchronize
 
+env:
+  PYTHON_VERSION: 3.11
+
 jobs:
   main-test-suite:
     runs-on: ubuntu-20.04
@@ -14,15 +17,15 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: Set up Python 3.11
+    - name: Set up Python Environment
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Collect Job Information
       id: job-info
       run: |
-        echo "Python Version: 3.11" >> ci_job_info.txt
+        echo "Python Version: ${{ env.PYTHON_VERSION }} " >> ci_job_info.txt
         echo "CI Triggering Event: ${{ github.event_name }}" >> ci_job_info.txt
         echo "Triggering Git Ref: ${{ github.ref }}" >> ci_job_info.txt
         echo "Triggering Git SHA: ${{ github.sha }}" >> ci_job_info.txt
@@ -85,11 +88,19 @@ jobs:
         make gce_test
         ln -s pytest-parsl/parsltest-current test_runinfo
 
+    - name: stop globus_compute_endpoint
+      env:
+        GLOBUS_COMPUTE_CLIENT_ID: ${{ secrets.GLOBUS_COMPUTE_CLIENT_ID }}
+        GLOBUS_COMPUTE_CLIENT_SECRET: ${{ secrets.GLOBUS_COMPUTE_SECRET_KEY }}
+      run: |
+        source /home/runner/work/parsl/parsl/.venv/bin/activate
+        globus-compute-endpoint stop default
+
     - name: Archive runinfo logs
       if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
-        name: runinfo-3.11-${{ steps.job-info.outputs.as-ascii }}-${{ github.sha }}
+        name: runinfo-${{ env.PYTHON_VERSION }}-${{ steps.job-info.outputs.as-ascii }}-${{ github.sha }}
         path: |
           runinfo/
           pytest-parsl/
