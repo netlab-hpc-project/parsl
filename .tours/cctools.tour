@@ -1,0 +1,197 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "CCTools详解",
+  "steps": [
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "核心：体现在TaskVineExecutor的实现中！",
+      "line": 51
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "默认从factory中去launch对应的task",
+      "line": 105
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "配置函数执行模式，默认是regular，可以支持serverless的形式",
+      "line": 106
+    },
+    {
+      "file": "parsl/executors/taskvine/manager_config.py",
+      "description": "### 用途\n\n`TaskVineManagerConfig` 数据类用于配置 TaskVine 管理器的各种参数，包括网络通信设置、任务设置、性能优化设置、日志设置等。通过这些配置，用户可以自定义 TaskVine 管理器的行为，以满足特定的计算需求。\n\n### 参数说明\n\n- **port**：网络端口，用于管理器与工作节点之间的通信。默认值为 `VINE_DEFAULT_PORT`。\n- **address**：本地机器的地址，默认为 `None`，表示使用 `socket.gethostname()` 获取地址。\n- **project_name**：项目名称，如果给定，TaskVine 会定期向全局 TaskVine 目录报告其状态和性能。\n- **project_password_file**：密码文件，用于管理器和工作节点之间的身份验证。\n- **env_vars**：环境变量字典，用于在执行任务之前设置 shell 的环境变量。\n- **init_command**：在执行任务之前运行的命令行。\n- **env_pack**：用于封装任务的依赖包，以便在远程执行任务时不需要共享文件系统。\n- **app_pack**：使用 `conda-pack` 准备每个应用的独立 Python 环境，以增加首次任务的延迟，但不需要在工作者节点上共享环境或文件系统。\n- **extra_pkgs**：当 `app_pack` 为 `True` 时使用，包含在打包环境中时需要包含的额外 pip/conda 包的列表。\n- **max_retries**：设置 TaskVine 在任务失败时重试的次数，默认为 1。\n- **library_config**：仅在服务器模式下执行函数时使用，配置函数槽位和资源数量。\n- **shared_fs**：是否使用共享文件系统，如果使用，TaskVine 将不会跟踪和传输文件以执行任务，但会增加共享文件系统的 I/O 压力。\n- **autolabel**：使用资源监控来自动确定资源标签。\n- **autolabel_window**：设置用于自动标记的任务数量。\n- **autolabel_algorithm**：选择自动标记算法。\n- **autocategory**：默认将每个应用放置在其自己的类别中。\n- **enable_peer_transfers**：是否启用工作节点之间的文件传输。\n- **wait_for_workers**：在管理器开始发送任务执行之前等待的工作节点数量。\n- **vine_log_dir**：存储 TaskVine 日志的目录。\n- **tune_parameters**：扩展的 `vine_tune` 参数，以字典形式表示。\n\n### 注意事项\n\n- **配置参数**：用户需要根据具体需求配置这些参数，以确保 TaskVine 管理器能够高效地管理任务执行。\n- **网络通信**：确保管理器和工作节点之间的网络通信正常，特别是当 `port` 和 `address` 被指定时。\n- **依赖管理**：合理配置 `env_pack` 和 `app_pack` 参数，以确保任务依赖的正确打包和传输。\n- **性能优化**：根据任务的特点和资源使用情况，合理配置 `autolabel`、`autolabel_window` 和 `autolabel_algorithm` 参数，以优化性能。\n- **日志管理**：合理配置 `vine_log_dir` 参数，以确保日志的存储和访问。\n\n通过合理配置 `TaskVineManagerConfig` 数据类，用户可以有效地管理和优化 TaskVine 管理器的行为，从而提高分布式计算任务的整体性能和效率。",
+      "line": 13
+    },
+    {
+      "file": "parsl/executors/taskvine/factory_config.py",
+      "description": "这段代码定义了一个名为 `TaskVineFactoryConfig` 的数据类（dataclass），用于配置一个 TaskVine 工厂的参数。TaskVine 是一个分布式计算框架，用于管理任务和资源。以下是每个参数的详细解释：\n\n1. **factory_timeout**: 整数类型，表示如果没有在 `$factory_timeout` 秒内看到管理器，则退出。退出时，会杀死所有工作进程。\n\n2. **scratch_dir**: 可选字符串类型，表示工厂操作的目录。默认为 `None`，此时 TaskVine 工厂会在 Parsl 的日志目录内使用一个目录。\n\n3. **min_workers**: 整数类型，表示在任何时候连接到管理器的最小工作进程数。默认为 1。\n\n4. **max_workers**: 整数类型，表示在任何时候连接到管理器的最大工作进程数。默认为 1。\n\n5. **workers_per_cycle**: 整数类型，表示每 30 秒内可以启动的新工作进程的最大数量。\n\n6. **worker_options**: 可选字符串类型，表示传递给工作进程的额外选项。运行 `vine_worker --help` 可以获取更多详细信息。默认为 `None`。\n\n7. **worker_executable**: 字符串类型，表示运行工作进程的可执行文件。默认为 `'vine_worker'`，该可执行文件会在 `$PATH` 中查找。\n\n8. **worker_timeout**: 整数类型，表示工作进程等待管理器联系的时间（秒），如果超过这个时间，工作进程会退出。默认为 300 秒。\n\n9. **cores**: 可选整数类型，表示工作进程应使用的核心数。默认为 `None`，表示工作进程可以使用所在机器的所有可用核心。\n\n10. **gpus**: 可选整数类型，表示工作进程应使用的 GPU 数量。默认为 `None`，表示工作进程可以使用所在机器的所有可用 GPU。\n\n11. **memory**: 可选整数类型，表示工作进程应使用的内存量（MB）。默认为 `None`，表示工作进程可以使用所在机器的所有可用内存。\n\n12. **disk**: 可选整数类型，表示工作进程应使用的磁盘空间量（MB）。默认为 `None`，表示工作进程可以使用所在机器的所有可用磁盘空间。\n\n13. **python_env**: 可选字符串类型，表示在哪个 Python 环境中运行工作进程。默认为 `None`。\n\n14. **batch_type**: 字符串类型，表示工厂应将工作进程作为作业提交到哪个批处理系统。选项包括 `'local'`（本地工作进程）、`'condor'`（通过 HTCondor 批处理系统提交工作进程）、`'sge'`（通过 SGE 批处理系统提交工作进程）、`'slurm'`（通过 SLURM 批处理系统提交工作进程）。默认为 `'local'`。\n\n15. **condor_requirements**: 可选字符串类型，描述工作进程应落在的 Condor 插槽的 Condor 要求。默认为 `None`。\n\n16. **batch_options**: 可选字符串类型，描述通用批处理选项。根据批处理系统的不同而变化。默认为 `None`。\n\n这个数据类的主要用途是提供一个配置框架，用于设置 TaskVine 工厂的各种参数，以便在分布式计算环境中高效地管理任务和工作进程。",
+      "line": 6
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "支持从各种Provider中获取执行的元件",
+      "line": 109
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "启动taskvine的executor，一般是在新的executor加入到DFK的时候就会启动这个程序了",
+      "line": 237
+    },
+    {
+      "file": "parsl/dataflow/dflow.py",
+      "description": "DFK加入新的executor的时候就会启动",
+      "line": 1155
+    },
+    {
+      "file": "parsl/dataflow/dflow.py",
+      "description": "初始化DFK的时候就会把所有的executors都加进来",
+      "line": 186
+    },
+    {
+      "file": "parsl/dataflow/dflow.py",
+      "description": "单例模式延迟初始化的时候，就会对应的启动内部的所有executors",
+      "line": 1470
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "这段Python代码定义了一个名为`__synchronize_manager_factory_comm_settings`的方法，用于同步管理器（manager）和工厂（factory）之间的通信设置。这样做是为了确保工厂能够直接与任务管理器进行通信。下面是对代码的详细解释：\n\n### 实现原理\n\n1. **检查管理器端口和项目名称**：\n   - 如果管理器的端口设置为0（表示管理器可以自动选择任何可用的端口），那么管理器必须有一个项目名称。这是因为工厂需要通过项目名称来查找管理器的端口。如果管理器没有提供项目名称，代码会自动生成一个唯一的名称，格式为`\"parsl-vine-\" + str(uuid.uuid4())`。\n\n2. **猜测主机名**：\n   - 如果管理器没有提供项目名称，并且也没有在管理器配置中明确指定地址，代码会尝试通过`get_any_address()`函数获取一个可用的主机名。\n\n3. **同步通信设置**：\n   - 最后，代码将管理器的通信设置（端口、地址、项目名称、密码文件）覆盖到工厂的通信设置中，以确保工厂能够正确地与任务管理器进行通信。\n\n### 用途\n\n这个方法的主要用途是在分布式计算环境中，特别是使用`TaskVine`框架时，确保管理器和工厂之间的通信设置一致。这对于任务调度和执行至关重要，因为它们需要通过特定的端口和地址进行通信。\n\n### 注意事项\n\n- **端口选择**：如果管理器选择端口0，那么项目名称是必须的，否则工厂无法知道管理器的端口。\n- **主机名获取**：如果没有提供项目名称和地址，代码会尝试自动获取一个主机名，但这可能不是最佳实践，因为它依赖于网络环境。\n- **同步设置**：确保管理器和工厂的通信设置一致，对于分布式系统的正常运行至关重要。\n\n这段代码通过同步管理器和工厂的通信设置，确保了分布式计算环境中的任务调度和执行能够顺利进行。",
+      "line": 189
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "TaskVine manager是一个专门的进程",
+      "line": 250
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这段代码定义了一个名为 `_taskvine_submit_wait` 的函数，它被装饰器 `@wrap_with_logs` 修饰。这个函数的目的是处理 Parsl 应用程序的提交到 TaskVine 对象。具体来说，它接收通过 `submit()` 方法提交的 Parsl 函数，并根据适当的规格创建 TaskVine 任务，然后将这些任务提交给 TaskVine。任务完成后，它会处理任务的退出状态和退出码，并将结果发送给 TaskVine 收集器线程。\n\n### 实现原理\n\n1. **装饰器 `@wrap_with_logs`**：这个装饰器可能用于在函数执行前后添加日志记录，以便于调试和监控。\n2. **参数**：\n   - `ready_task_queue`：一个任务队列，用于存储准备好的任务。\n   - `finished_task_queue`：一个任务队列，用于存储已经完成的任务。\n   - `should_stop`：一个标志，用于指示是否应该停止任务处理。\n   - `manager_config`：管理配置，可能包含与 TaskVine 和 Parsl 相关的配置信息。\n3. **功能**：\n   - 处理 Parsl 函数的提交，创建 TaskVine 任务并提交。\n   - 监控任务的完成状态，处理任务的退出状态和退出码。\n   - 将任务结果发送给 TaskVine 收集器线程。\n\n### 用途\n\n这个函数的主要用途是在多进程环境中处理 Parsl 应用程序的提交和任务管理。通过将任务提交和监控逻辑封装在一个独立的进程中，可以避免 Python 的全局解释器锁（GIL）问题，提高并行处理效率。\n\n### 注意事项\n\n1. **进程 vs 线程**：由于 TaskVine 的 `wait` 方法与 Python 的 GIL 不兼容，这个函数应该作为一个独立的进程运行，而不是线程。这意味着需要使用 `multiprocessing` 模块进行进程间通信，而不是共享内存。\n2. **日志记录**：通过 `@wrap_with_logs` 装饰器，函数执行过程中的关键步骤会被记录日志，这对于调试和监控非常有帮助。\n3. **配置管理**：`manager_config` 参数允许传递特定的配置信息，这对于确保任务按照预期执行至关重要。\n\n总的来说，这段代码提供了一个在多进程环境中处理 Parsl 应用程序提交和任务管理的解决方案，通过合理的日志记录和配置管理，确保了任务的可靠性和可维护性。",
+      "line": 138
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这里创建了一个TaskVine Manager",
+      "line": 164
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "poncho_package_create 是一个简单的命令行实用程序，它从输入 JSON 依赖文件创建本地 Conda 环境。该命令在输出路径创建一个环境 tarball，可以发送到具有相同架构的不同计算机并在其上运行。\n\ndependency-file 参数是 JSON 规范文件的路径（相对或绝对）。输出路径参数指定所创建的环境 tarball 的路径（通常应以 .tar.gz 结尾）。",
+      "line": 192
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "```python\na = m.declare_file(\"mydata.txt\")\nd = m.declare_file(\"dataset/\")\n```\n\ndeclare_file 指示管理器本地文件系统中的一个文件，该文件将被传输到集群中并可供任务使用。文件和目录都可以这样声明：declare_file(\"mydata.txt\")表示单个文本文件，而declare_file(\"dataset/\")表示整个目录树。本地文件或目录也可以用作任务的输出。\n",
+      "line": 195
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "taskvine manager的主循环",
+      "line": 206
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "从 ready_task_queue中获取task，从本项目看，ready_task_queue是一个multiprocessing.Queue()数据结构\n\n\n`multiprocessing.Queue()` 是 Python `multiprocessing` 模块中的一个类，用于在多进程之间进行通信和共享数据。它提供了一个线程和进程安全的队列，可以在多个进程之间传递消息或数据。\n\n以下是 `multiprocessing.Queue()` 的主要作用和特点：\n\n### 作用\n1. **进程间通信**：`multiprocessing.Queue` 允许不同进程之间通过队列进行通信，一个进程可以将数据放入队列，另一个进程可以从队列中取出数据。\n2. **数据共享**：队列可以用于在多个进程之间共享数据，而不需要使用共享内存或其他复杂的同步机制。\n3. **线程安全**：`multiprocessing.Queue` 是线程安全的，可以在多线程环境中安全使用，无需额外的锁机制。\n\n### 特点\n1. **先进先出（FIFO）**：队列遵循先进先出（FIFO）的原则，即先放入队列的数据会先被取出。\n2. **阻塞和非阻塞操作**：\n   - 默认情况下，队列的 `get()` 方法是阻塞的，如果队列为空，调用 `get()` 的进程会等待，直到队列中有数据可取。\n   - 可以通过设置 `get()` 方法的 `block` 参数为 `False` 来进行非阻塞操作，如果队列为空，`get()` 会立即抛出 `Queue.Empty` 异常。\n3. **容量限制**：队列可以设置最大容量，如果达到最大容量，放入数据的操作会阻塞，直到队列中有可用空间。\n4. **支持多种数据类型**：队列可以存储多种数据类型，包括数字、字符串、列表、字典等。\n\n### 示例代码\n以下是一个简单的示例，展示了如何使用 `multiprocessing.Queue` 在两个进程之间传递数据：\n\n```python\nimport multiprocessing\n\ndef producer(queue):\n    for i in range(5):\n        queue.put(f\"Item {i}\")\n        print(f\"Produced {i}\")\n\ndef consumer(queue):\n    while True:\n        try:\n            item = queue.get(timeout=1)  # 设置超时时间\n            print(f\"Consumed {item}\")\n        except multiprocessing.queues.Empty:\n            break\n\nif __name__ == \"__main__\":\n    queue = multiprocessing.Queue()\n\n    p = multiprocessing.Process(target=producer, args=(queue,))\n    c = multiprocessing.Process(target=consumer, args=(queue,))\n\n    p.start()\n    c.start()\n\n    p.join()\n    c.join()\n```\n\n在这个示例中：\n- `producer` 函数将 5 个字符串放入队列。\n- `consumer` 函数从队列中取出并打印这些字符串，直到队列为空。\n- 使用 `multiprocessing.Process` 创建并启动生产者和消费者进程。\n- 使用 `queue.put()` 方法将数据放入队列。\n- 使用 `queue.get()` 方法从队列中取出数据，并设置超时时间以避免永久等待。\n\n通过 `multiprocessing.Queue`，可以方便地在多进程之间传递数据，实现进程间的通信和协作。",
+      "line": 217
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "regular执行模式",
+      "line": 222
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "集成CCTools的核心是：必须把exec_parsl_function.py放到计算节点上，然后在计算节点上执行这段python脚本。然后这段脚本执行的task会被用TaskVine Task进行封装。\n\n如果要在神威上进行，这个明显是不太显示的，应该需要将这个启动脚本转化为其他脚本",
+      "line": 224
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "将command封装成Task",
+      "line": 234
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "对于serverless的执行类型，需要考虑安装需要的lib",
+      "line": 243
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "从env_cache_dir和poncho_create_script，准备对应的serverless的环境目录",
+      "line": 250
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "当不支持共享文件系统的时候，需要额外处理",
+      "line": 62
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "通过conda list进行环境的打包",
+      "line": 72
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "创建conda环境",
+      "line": 81
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "返回poncho_env_path",
+      "line": 95
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这行代码调用了 m.create_library_from_functions 方法来创建一个库，并传递了多个参数：\n\n- common-parsl-taskvine-lib：这是库的名称。\n- run_parsl_function：这是一个函数，表示库中的一个函数。\n- poncho_env=poncho_env_path：这里指定了环境文件的路径。\n- init_command=manager_config.init_command：这里指定了初始化命令，该命令来自 manager_config 对象的 init_command 属性。\n- add_env=add_env：这里传递了之前定义的 add_env 变量，值为 False。",
+      "line": 254
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这个函数内部，调用parsl函数",
+      "line": 255
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "安装lib",
+      "line": 283
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "封装成cctools里面的FunctionCall",
+      "line": 289
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "配置资源",
+      "line": 318
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这两行注释解释了接下来的代码操作的目的。它们说明接下来要添加的辅助文件是在远程节点上执行parsl函数所需的。这些文件只有在任务处于'regular'模式下时才需要添加。",
+      "line": 340
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "配置函数文件、参数文件、map文件、结果文件",
+      "line": 345
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "核心：调用cctools的submit方法进行task执行",
+      "line": 389
+    },
+    {
+      "file": "parsl/executors/taskvine/manager.py",
+      "description": "这段代码是一个Python程序的一部分，用于处理任务队列中的任务，并记录任务执行的结果。它使用了多线程和队列（queue）来管理任务的执行和结果收集。下面是对代码的详细解释：\n\n### 代码功能\n该代码的主要功能是从一个任务队列中获取任务，执行任务，并处理任务的结果。如果任务成功完成，它会记录任务的结果；如果任务失败，它会解释失败的原因并将相关信息记录下来。\n\n### 实现原理\n1. **循环等待任务**：代码首先检查任务队列是否为空，并且是否应该继续运行（`not should_stop.is_set()`）。如果队列不为空且没有收到停止信号，则继续执行。\n   \n2. **获取任务**：使用`m.wait(1)`方法从队列中获取任务。如果在1秒内没有获取到任务，则`task_found`设为`False`，并继续等待。\n\n3. **处理任务**：如果成功获取到任务，记录任务的详细信息，包括任务ID、类别、命令和标准输出等。\n\n4. **检查结果文件**：检查任务的结果文件是否存在。如果存在，则将任务的结果和状态放入`finished_task_queue`队列中；如果不存在，则调用`_explain_taskvine_result(t)`方法解释任务失败的原因，并将失败信息放入`finished_task_queue`队列中。\n\n### 用途\n这段代码主要用于分布式任务管理系统，例如在科学计算、数据处理等场景中，需要将大量任务分发到多个执行器上并行执行，并收集执行结果。\n\n### 注意事项\n1. **任务队列管理**：代码中使用了`m.empty()`和`m.wait(1)`来管理任务队列。确保任务队列的正确性和高效性是关键。\n\n2. **任务结果的可靠性**：代码通过检查结果文件是否存在来判断任务是否成功完成。因此，结果文件的生成和保存是可靠的。\n\n3. **错误处理**：代码中包含了详细的错误处理逻辑，通过`_explain_taskvine_result(t)`方法来解释任务失败的原因，并记录相关信息，便于后续的错误分析和调试。\n\n4. **日志记录**：代码中使用了`logger.debug`来记录任务的执行情况和结果，这对于监控和调试任务执行过程非常重要。\n\n5. **线程安全**：代码中使用了`put_nowait`方法将任务结果放入`finished_task_queue`队列中，确保在多线程环境下的线程安全。\n\n总的来说，这段代码是一个高效、可靠的任务管理和结果收集模块，适用于需要大量并行任务处理的场景。",
+      "line": 404
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "TaskVine factory如果是使能的，需要创建一个进程进行处理",
+      "line": 259
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "启动线程去收集结果",
+      "line": 268
+    }
+  ],
+  "ref": "nscc-x86"
+}
