@@ -188,9 +188,134 @@
       "line": 259
     },
     {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "最重要的文件，这个文件会作为标准任务的入口",
+      "line": 172
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "核心的就是传入这些参数：\n\n- map_file: ？\n- function_file: 表示pickled后的parsl fucntion信息\n- argument_file: 表示pickled后的参数信息\n- result_file: 输出会被写入到这个文件中",
+      "line": 181
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "核心执行函数",
+      "line": 185
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "从文件中读取各种信息",
+      "line": 149
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "都是从文件中获取fn, args, kwargs等信息",
+      "line": 119
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "针对mapping, fn_args, fn_kwargs进行remap",
+      "line": 126
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "功能：对函数的所有参数进行路径映射。\n\n实现原理：\n- 首先对fn_args中的文件对象进行路径映射。\n- 然后对fn_kwargs中的文件对象进行路径映射，特别处理\"inputs\"和\"outputs\"关键字参数，以及\"stdout\"和\"stderr\"关键字参数。\n\n用途：用于在调用函数时，自动处理文件路径的映射。",
+      "line": 57
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "首先映射fn_args",
+      "line": 60
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "功能：对文件列表进行路径映射。\n\n参数：\n- mapping：路径映射字典。\n- maybe_files：可能包含文件的列表。\n\n实现原理：遍历maybe_files列表，对每个文件调用remap_location函数进行路径映射。",
+      "line": 51
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "功能：将文件路径从本地映射到远程。\n\n实现原理：检查parsl_file是否为File类型，如果是，则根据mapping字典更新parsl_file的本地路径。\n\n用途：用于在分布式计算环境中，将文件路径从管理节点映射到工作节点。\n\n注意事项：需要确保mapping字典中包含所有需要的路径映射。",
+      "line": 38
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "之后映射fn_kwargs的内容",
+      "line": 65
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "这段Python代码的主要目的是创建一个名为`user_ns`的字典，并将当前作用域中的所有局部变量（`locals()`）和全局变量（`__builtins__`）更新到这个字典中。下面是对这段代码的详细解释：\n\n1. **`user_ns = locals()`**:\n   - `locals()`函数返回一个字典，包含了当前作用域中的所有局部变量。这意味着，如果这段代码在一个函数内部执行，`user_ns`将包含该函数的所有局部变量；如果在一个模块级别执行，`user_ns`将包含该模块的所有全局变量。\n\n2. **`user_ns.update({'__builtins__': __builtins__})`**:\n   - `update()`方法用于将一个字典的键值对添加到另一个字典中。这里，它将`{'__builtins__': __builtins__}`这个字典的键值对添加到`user_ns`中。\n   - `__builtins__`是一个包含了Python标准库中所有内置函数和变量的模块。通过将`__builtins__`添加到`user_ns`中，可以确保在`user_ns`中可以访问这些内置函数和变量。\n\n**用途**:\n- 这种方法通常用于创建一个模拟用户命名空间的环境，例如在交互式解释器中，或者在使用某些需要用户命名空间的库时（如IPython）。\n\n**注意事项**:\n- 使用`locals()`和`update()`方法时，需要注意当前作用域中的变量可能会被修改。如果`user_ns`被修改，那么原始作用域中的变量也会被修改。\n- 在某些情况下，直接修改`__builtins__`可能会导致安全问题，因为它包含了Python的所有内置函数和变量。因此，在使用这种方法时，应该谨慎处理`__builtins__`，避免覆盖或修改不应被修改的内置函数和变量。",
+      "line": 129
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "这段Python代码定义了两个函数：`encode_function`和`encode_byte_code_function`。这两个函数的主要目的是将一个给定的函数注册到一个指定的命名空间中，并生成可以在该命名空间中执行的代码。下面是对这两个函数的详细解释：\n\n### `encode_function`函数\n\n#### 功能\n`encode_function`函数的主要功能是将一个给定的函数注册到一个指定的命名空间中，并生成可以在该命名空间中执行的代码。\n\n#### 参数\n- `user_namespace`：一个字典，表示用户定义的命名空间。\n- `fn`：要注册的函数对象。\n- `fn_name`：函数在命名空间中的名称。\n- `fn_args`：函数的位置参数。\n- `fn_kwargs`：函数的关键字参数。\n\n#### 返回值\n返回一个元组，包含两个元素：\n- `code`：一个字符串，表示可以在`user_namespace`中执行的代码。\n- `result_name`：一个字符串，表示函数执行结果的变量名。\n\n#### 实现原理\n1. 定义了一些前缀和变量名，用于在命名空间中创建变量。\n2. 将`fn_args`、`fn_kwargs`和`result_name`添加到`user_namespace`中。\n3. 检查`fn`是否是一个可调用对象，如果是，则调用`encode_byte_code_function`函数生成代码；否则，抛出一个`ValueError`异常。\n\n#### 用途\n这个函数可以用于将一个函数注册到一个命名空间中，以便在需要时执行该函数。这在需要动态执行函数的场景中非常有用，比如在分布式计算框架中。\n\n#### 注意事项\n- `fn`必须是一个可调用对象，否则会抛出`ValueError`异常。\n- `user_namespace`必须是一个字典，用于存储函数和参数。\n\n### `encode_byte_code_function`函数\n\n#### 功能\n`encode_byte_code_function`函数的主要功能是将一个给定的函数注册到一个指定的命名空间中，并生成可以在该命名空间中执行的代码。\n\n#### 参数\n- `user_namespace`：一个字典，表示用户定义的命名空间。\n- `fn`：要注册的函数对象。\n- `fn_name`：函数在命名空间中的名称。\n- `args_name`：函数的位置参数的变量名。\n- `kwargs_name`：函数的关键字参数的变量名。\n- `result_name`：函数执行结果的变量名。\n\n#### 返回值\n返回一个字符串，表示可以在`user_namespace`中执行的代码。\n\n#### 实现原理\n1. 将`fn`添加到`user_namespace`中。\n2. 生成一个字符串，该字符串表示在`user_namespace`中调用`fn`的代码，并将结果存储在`result_name`变量中。\n\n#### 用途\n这个函数可以用于生成可以在指定命名空间中执行的代码，以便动态执行函数。\n\n#### 注意事项\n- `user_namespace`必须是一个字典，用于存储函数和参数。\n\n总结来说，这段代码的主要目的是将一个函数注册到一个命名空间中，并生成可以在该命名空间中执行的代码。这在需要动态执行函数的场景中非常有用，比如在分布式计算框架中。",
+      "line": 84
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "返回一个用户空间、代码、和结果信息",
+      "line": 134
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "执行function",
+      "line": 155
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "这段Python代码定义了一个名为`execute_function`的函数，它的作用是在指定的命名空间中执行一段函数代码，并返回该函数的结果。下面是对这段代码的详细解释：\n\n### 函数定义\n```Python\ndef execute_function(namespace, function_code, result_name):\n```\n- `namespace`：这是一个字典，代表一个命名空间。在这个命名空间中，函数代码将被执行。\n- `function_code`：这是一个字符串，包含了要执行的函数代码。\n- `result_name`：这是一个字符串，表示函数执行后，其结果将被存储在命名空间中，变量名为`result_name`。\n\n### 执行函数代码\n```Python\nexec(function_code, namespace, namespace)\n```\n- `exec`函数用于执行动态生成的Python代码。在这里，`function_code`中的代码将在`namespace`命名空间中执行。\n- 第一个参数是要执行的代码字符串。\n- 第二个参数是全局命名空间，这里使用`namespace`。\n- 第三个参数是局部命名空间，这里也使用`namespace`。\n\n### 获取函数结果\n```Python\nresult = namespace.get(result_name)\n```\n- `namespace.get(result_name)`从命名空间中获取名为`result_name`的变量值，并将其赋值给`result`变量。\n\n### 返回结果\n```Python\nreturn result\n```\n- 函数返回`result`，即函数执行后的结果。\n\n### 用途\n这个函数的主要用途是在运行时动态地执行函数代码，并获取其结果。这在需要根据某些条件动态生成和执行代码的场景中非常有用，比如在Web开发中根据用户输入动态生成SQL查询，或者在数据分析中根据用户需求动态生成数据处理函数。\n\n### 注意事项\n1. **安全性**：使用`exec`执行动态代码存在安全风险，因为它可以执行任何Python代码。确保只执行可信任的代码，避免执行恶意代码。\n2. **命名空间管理**：`namespace`是一个字典，它模拟了Python的命名空间。确保在调用`execute_function`之前，`namespace`中包含了所有必要的变量和函数。\n3. **错误处理**：`exec`函数执行时可能会抛出异常，比如语法错误。建议在调用`execute_function`时添加适当的错误处理机制。\n\n### 示例\n假设我们有一个函数代码字符串，它定义了一个函数并返回一个结果：\n```Python\nfunction_code = \"\"\"\ndef add(a, b):\n    return a + b\n\nresult = add(3, 4)\n\"\"\"\n\nresult = execute_function({}, function_code, 'result')\nprint(result)  # 输出: 7\n```\n在这个示例中，我们定义了一个简单的加法函数，并在`namespace`中执行它。执行后，函数的结果被存储在`result`变量中，并返回给调用者。",
+      "line": 137
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "最后一步，把结果写入到file中",
+      "line": 165
+    },
+    {
+      "file": "parsl/executors/taskvine/exec_parsl_function.py",
+      "description": "打开文件，然后把序列化后的结果写入即可",
+      "line": 32
+    },
+    {
       "file": "parsl/executors/taskvine/executor.py",
       "description": "启动线程去收集结果",
       "line": 268
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "如果当前没有被stop，则需要不断循环",
+      "line": 616
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "从finished_task_queue中获取task的信息",
+      "line": 622
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "把tasks中和当前相关的executor_id对应的future拿出来",
+      "line": 628
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "正常情况下，把result放入到future中",
+      "line": 647
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "从文件中获取结果",
+      "line": 634
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "running或pending的任务减一",
+      "line": 656
+    },
+    {
+      "file": "parsl/executors/taskvine/executor.py",
+      "description": "完成所有任务后，需要检查一下future的信息是否都被完成了",
+      "line": 665
     }
   ],
   "ref": "nscc-x86"
