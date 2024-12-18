@@ -163,6 +163,10 @@ def pytest_configure(config):
         'markers',
         'shared_fs: Marks tests that require a shared_fs between the workers are the test client'
     )
+    config.addinivalue_line(
+        'markers',
+        'legion: Marks tests that using Legion Executor'
+    )
 
 
 @pytest.fixture(autouse=True, scope='session')
