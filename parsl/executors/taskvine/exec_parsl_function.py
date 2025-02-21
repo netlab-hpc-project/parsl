@@ -124,6 +124,7 @@ def load_function(map_file, function_file, argument_file):
 
     mapping = unpack_object_from_file(map_file)
     remap_all_files(mapping, fn_args, fn_kwargs)
+    print(f"In load_function function => fn: {fn}, fn_args: {fn_args}, fn_kwargs: {fn_kwargs}, fn_name: {fn_name}, mapping: {mapping}.")
 
     # Create the namespace to isolate the function execution.
     user_ns = locals()
@@ -144,6 +145,7 @@ def execute_function(namespace, function_code, result_name):
 
 
 def run(map_file, function_file, argument_file, result_file):
+    print(f"In run function => map_file: {map_file}, function_file: {function_file}, argument_file: {argument_file}, result_file: {result_file}.")
     try:
         try:
             (namespace, function_code, result_name) = load_function(map_file, function_file, argument_file)

@@ -70,11 +70,11 @@ $(CCTOOLS_INSTALL):	#CCtools contains both taskvine and workqueue so install onl
 
 .PHONY: vineex_local_test
 vineex_local_test: $(CCTOOLS_INSTALL)  ## run all tests with taskvine_ex config
-	PYTHONPATH=/tmp/cctools/lib/python3.8/site-packages  pytest parsl/tests/ -k "not cleannet" --config parsl/tests/configs/taskvine_ex.py --random-order --durations 10
+	pytest parsl/tests/ -k "not cleannet" --config parsl/tests/configs/taskvine_ex.py --random-order --durations 10
 
 .PHONY: wqex_local_test
 wqex_local_test: $(CCTOOLS_INSTALL)  ## run all tests with workqueue_ex config
-	PYTHONPATH=/tmp/cctools/lib/python3.8/site-packages  pytest parsl/tests/ -k "not cleannet" --config parsl/tests/configs/workqueue_ex.py --random-order --durations 10
+	pytest parsl/tests/ -k "not cleannet" --config parsl/tests/configs/workqueue_ex.py --random-order --durations 10
 
 .PHONY: radical_local_test
 radical_local_test:
@@ -85,7 +85,7 @@ radical_local_test:
 .PHONY: config_local_test
 config_local_test: $(CCTOOLS_INSTALL)
 	pip3 install ".[monitoring,visualization,proxystore,kubernetes]"
-	PYTHONPATH=/tmp/cctools/lib/python3.8/site-packages pytest parsl/tests/ -k "not cleannet" --config local --random-order --durations 10
+	pytest parsl/tests/ -k "not cleannet" --config local --random-order --durations 10
 
 .PHONY: site_test
 site_test:
@@ -119,6 +119,10 @@ deploy: ## deploy the distribution
 .PHONY: update_version
 update_version: ## Update version
 	./tag_and_release.sh update_version
+
+.PHONY: reinstall
+reinstall: ## Update version
+	./tag_and_release.sh reinstall
 
 .PHONY: release
 release: deps tag package deploy   ## create a release. To run, do a 'make VERSION="version string"  release'
