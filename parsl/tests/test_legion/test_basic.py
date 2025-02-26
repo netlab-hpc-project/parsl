@@ -9,5 +9,8 @@ def test_app():
     def dummy(a, b):
         return a+b
 
-    x = dummy(a=7, b=1)
-    assert x.result() == 8
+    arr_x = []
+    for i in range(10):
+        arr_x.append(dummy(a=i, b=i))
+    for i in range(10):
+        assert arr_x[i].result() == 2*i

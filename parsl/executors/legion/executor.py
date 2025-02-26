@@ -60,9 +60,10 @@ class ParslReadyTask:
         self.args = args
         self.kwargs = kwargs
     
-class LegionTask:
+class LegionReadyTask:
     def __init__(self, 
                 executor_id: int,                # executor id of task
+                parsl_executor_id: int,
                 cmd: list,                       # command to execute the task
                 input_files: list,                # list of input files to this function
                 output_files: list,               # list of output files to this function
@@ -73,6 +74,7 @@ class LegionTask:
                 resource_specification: Optional[Dict], # 资源类型
                 ) -> None:
         self.executor_id: int = executor_id
+        self.parsl_executor_id: int = parsl_executor_id
         self.cmd: list = cmd
         self.input_files: list[ParslFileToLegion] = input_files
         self.output_files: list[ParslFileToLegion] = output_files
@@ -82,6 +84,14 @@ class LegionTask:
         self.result_file: Optional[str] = result_file
         self.resource_specification: Optional[Dict] = resource_specification
     
+class LegionFinishTask:
+    def __init__(self, executor_id: int,
+                parsl_executor_id: int,
+                result_file: str):
+        self.executor_id: int = executor_id
+        self.parsl_executor_id: int = parsl_executor_id
+        self.result_file: str = result_file
+
 class ParslFileToLegion:
     """
     Support structure to report Parsl filenames to Legion Runtime.
@@ -92,10 +102,10 @@ class ParslFileToLegion:
 
 
     # 直接把task的信息写入legion runtime监听的文件夹即可
-def submit_task_to_legion(
+def submit_task_to_legion(parsl_executor_id,
     input_files, output_files, resource_specification,
     function_file: str, argument_file: str, result_file: str, map_file: str, 
-    path: str) -> (int, LegionTask):
+    path: str) -> (int, LegionReadyTask):
     # 首先需要加上文件锁，理论上应该是一个跨进程的文件读写锁
     with open(path+'.lock', 'w') as lock_file:
         # 获取排他锁
@@ -109,8 +119,9 @@ def submit_task_to_legion(
             except FileNotFoundError:
                 total_lines = -1
             
-            legion_task_info = LegionTask(
+            legion_task_info = LegionReadyTask(
                 total_lines,
+                parsl_executor_id,
                 ["mamba run -n parsl_py38 --no-capture-output python ./playground/exec_parsl_function.py"],
                 input_files,
                 output_files,
@@ -124,6 +135,7 @@ def submit_task_to_legion(
             with open(path, 'a') as f:
                 task_meta = {
                     "executor_id": str(legion_task_info.executor_id),
+                    "parsl_executor_id": str(parsl_executor_id),
                     "cmd": legion_task_info.cmd,
                     "function_file": legion_task_info.function_file,
                     "argument_file": legion_task_info.argument_file,
@@ -138,13 +150,21 @@ def submit_task_to_legion(
             fcntl.flock(lock_file, fcntl.LOCK_UN)
     return total_lines, legion_task_info
 
-def get_task_from_legion(queue: RobustFsQueue, timeout: Optional[float]=None) -> Optional[int]:
+def get_task_from_legion(queue: RobustFsQueue, timeout: Optional[float]=None) -> Optional[LegionFinishTask]:
     # 从legion runtime监听的文件夹中读取metadata的信息, 如果task已经完成则返回处理?
     msg = queue.pop(timeout)
     if msg is None:
         return None
     else:
-        return int(msg)
+        # 将接收到的msg json解析为数据结构LegionFinishTask
+        # 从msg中获取executor_id, parsl_executor_id, result_file
+        # 然后返回LegionFinishTask对象
+        msg = json.loads(msg)
+        return LegionFinishTask(
+            executor_id = int(msg['executor_id']),
+            parsl_executor_id = int(msg['parsl_executor_id']),
+            result_file = msg['result_file']
+        )
 
 def serialize_object_to_file(path, obj):
     """Takes any object and serializes it to the file path."""
@@ -205,9 +225,6 @@ def _legion_submit_wait(
     logger.debug("Starting Legion Submit/Wait Process")
     setproctitle("parsl: Legion submit/wait")
     
-    legion_task_map: Dict[int, LegionTask] = {}
-    parsl_id_to_legion_id: Dict[int, int] = {}
-    legion_id_to_parsl_id: Dict[int, int] = {}
     legion_queue = RobustFsQueue(legion_queue_dir)
     
     # Get parent pid, useful to shutdown this process when its parent, the legion
@@ -287,17 +304,11 @@ def _legion_submit_wait(
                 raise
             
             try:
-                legion_executor_id, legion_task = submit_task_to_legion(
+                legion_executor_id, _ = submit_task_to_legion(parsl_ready_task.executor_id,
                     input_files, output_files, parsl_ready_task.resource_specification,
                     function_file, argument_file, result_file, map_file, legion_runtime_json_path)
                 logger.debug(f"Submitted executor task to Legion (in Legion id: {legion_executor_id})")
-                # 把parsl的task id和legion的task id进行映射
-                parsl_id_to_legion_id[parsl_ready_task.executor_id] = legion_executor_id
-                legion_id_to_parsl_id[legion_executor_id] = parsl_ready_task.executor_id
-                legion_task_map[int(legion_executor_id)] = legion_task
-                logger.debug(f"parsl_id_to_legion_id: {parsl_id_to_legion_id}")
-                logger.debug(f"legion_id_to_parsl_id: {legion_id_to_parsl_id}")
-                logger.debug(f"update legion_task_map: {legion_task_map}")
+                
             except Exception as e:
                 logger.error("Unable to submit task to legion: {}".format(e))
                 finished_task_queue.put_nowait(ParslFinishTask(executor_id=parsl_ready_task.executor_id,
@@ -309,24 +320,22 @@ def _legion_submit_wait(
             logger.debug("Executor Parsl task {} submitted as Legion task with id {}".format(parsl_ready_task.executor_id, legion_executor_id))
             
         while not should_stop.is_set():
-            legion_executor_id = get_task_from_legion(legion_queue, 0.5)
+            task_msg = get_task_from_legion(legion_queue, 0.5)
             # TODO(xlc): 奇怪的bug, legion_task_map经常为空
-            if legion_executor_id == None:
+            if task_msg == None:
                 break 
-            logger.debug(f"completed Legion executor task: {legion_executor_id}")
-            logger.debug(f"get legion_task_map: {legion_task_map}")
-            legion_result_file = legion_task_map[int(legion_executor_id)].result_file
+            logger.debug(f"completed Legion executor task: {task_msg.executor_id}")
             
-            if os.path.exists(legion_result_file):
-                logger.debug("Found result in {}".format(legion_result_file))
-                finished_task_queue.put_nowait(ParslFinishTask(executor_id=legion_id_to_parsl_id[legion_executor_id],
+            if os.path.exists(task_msg.result_file):
+                logger.debug("Found result in {}".format(task_msg.result_file))
+                finished_task_queue.put_nowait(ParslFinishTask(executor_id=int(task_msg.parsl_executor_id),
                                                                result_received=True,
-                                                               result_file=legion_result_file,
+                                                               result_file=task_msg.result_file,
                                                                reason=None,
                                                                status=0))
             else:
-                logger.debug("Did not find result in {}".format(legion_result_file))
-                finished_task_queue.put_nowait(ParslFinishTask(executor_id=legion_id_to_parsl_id[legion_executor_id],
+                logger.debug("Did not find result in {}".format(task_msg.result_file))
+                finished_task_queue.put_nowait(ParslFinishTask(executor_id=int(task_msg.parsl_executor_id),
                                                                result_received=False,
                                                                result_file=None,
                                                                reason="task could not find the result file",
@@ -462,7 +471,8 @@ class LegionExecutor(BlockProviderExecutor, RepresentationMixin):
         os.mkdir(self._path_in_task(parsl_task_id))
         fu = Future()
         with self._tasks_lock:
-            self.tasks[parsl_task_id] = fu
+            self.tasks[int(parsl_task_id)] = fu
+            logger.debug(f"push future for task {parsl_task_id}, check self.tasks: {self.tasks}")
             
         parsl_ready_task_info = ParslReadyTask(
             executor_id=parsl_task_id,
@@ -538,7 +548,8 @@ class LegionExecutor(BlockProviderExecutor, RepresentationMixin):
                 
                 logger.debug(f"check task_report.parsl_executor_id: {task_report.parsl_executor_id}, type: {type(task_report.parsl_executor_id)}")
                 with self._tasks_lock:
-                    future = self.tasks.pop(task_report.parsl_executor_id)
+                    logger.debug(f"pop future for task {task_report.parsl_executor_id}, check self.tasks: {self.tasks}")
+                    future = self.tasks.pop(int(task_report.parsl_executor_id))
             
                 logger.debug(f'Updating Future for Parsl Task: {task_report.parsl_executor_id}. \
                                Task {task_report.parsl_executor_id} has result_received set to {task_report.result_received}')
