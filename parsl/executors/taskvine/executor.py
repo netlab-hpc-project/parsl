@@ -367,6 +367,7 @@ class TaskVineExecutor(BlockProviderExecutor, putils.RepresentationMixin):
         input_files += [self._register_file(f) for f in args if isinstance(f, File)]
 
         for kwarg, maybe_file in kwargs.items():
+            logger.debug(f"check kwarg {kwarg}({type(kwarg)}), maybe_file {maybe_file}({type(maybe_file)})")
             # Add appropriate input and output files from "stdout" and "stderr" keyword arguments
             if kwarg == "stdout" or kwarg == "stderr":
                 if maybe_file:

@@ -6,6 +6,7 @@ import multiprocessing
 from parsl.executors.legion.file_queue import RobustFsQueue
 
 # Test that the push method creates a file with the correct message
+@pytest.mark.legion
 def test_push_creates_file_with_correct_message():
     try:
         queue = RobustFsQueue("./parsl/tests/test_legion/test_queue")
@@ -24,6 +25,7 @@ def test_push_creates_file_with_correct_message():
     
 
 # Test that the push method handles concurrent access correctly
+@pytest.mark.legion
 def test_push_handles_concurrent_access():
     try:
         queue = RobustFsQueue("./parsl/tests/test_legion/test_queue")
@@ -55,6 +57,7 @@ def test_push_handles_concurrent_access():
         if queue.queue_dir.exists():
             shutil.rmtree(queue.queue_dir)
 
+@pytest.mark.legion
 def test_pop():
     try:
         queue = RobustFsQueue("./parsl/tests/test_legion/test_queue")

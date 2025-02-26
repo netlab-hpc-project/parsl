@@ -1,9 +1,11 @@
 import os
 import threading
+import pytest
 from parsl.executors.legion.executor import submit_task_to_legion
 
 
 # 测试正常情况(只写入单行)
+@pytest.mark.legion
 def test_submit_task_to_legion_normal():
     path = "./parsl/tests/test_legion/test_args.json"
     # 删除path和path的文件锁
@@ -21,13 +23,13 @@ def test_submit_task_to_legion_normal():
     
 
     total_lines, legion_task_info = submit_task_to_legion(
-        input_files, output_files, resource_specification,
+        0, input_files, output_files, resource_specification,
         function_file, argument_file, result_file, map_file, path
     )
 
     assert total_lines == 0  # 假设初始文件行数为 0
     assert legion_task_info.executor_id == 0  # 假设 executor_id 为 0
-    assert legion_task_info.cmd == ["mamba run -n parsl_py38 --no-capture-output python./playground/exec_parsl_function.py"]
+    assert legion_task_info.cmd == ["mamba run -n parsl_py38 --no-capture-output python ./playground/exec_parsl_function.py"]
     assert legion_task_info.input_files == input_files
     assert legion_task_info.output_files == output_files
     assert legion_task_info.map_file == map_file
@@ -46,6 +48,7 @@ def test_submit_task_to_legion_normal():
     
     
 # 测试正常情况(并行写入多行数据)
+@pytest.mark.legion
 def test_submit_task_to_legion_par():
     path = "./parsl/tests/test_legion/test_args.json"
     # 删除path和path的文件锁
@@ -69,7 +72,7 @@ def test_submit_task_to_legion_par():
         
         def thread_task():
             total_lines, legion_task_info = submit_task_to_legion(
-                input_files, output_files, resource_specification,
+                i, input_files, output_files, resource_specification,
                 function_file, argument_file, result_file, map_file, path
             )
             with lock:

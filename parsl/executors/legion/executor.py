@@ -117,7 +117,7 @@ def submit_task_to_legion(parsl_executor_id,
                     lines = f_read.readlines()
                     total_lines = len(lines)
             except FileNotFoundError:
-                total_lines = -1
+                total_lines = 0
             
             legion_task_info = LegionReadyTask(
                 total_lines,
@@ -205,7 +205,7 @@ def construct_map_file(map_file, input_files, output_files):
         file_translation_map[local_name] = remote_name
     serialize_object_to_file(map_file, file_translation_map)
 
-def register_file(self, parsl_task) -> ParslFileToLegion:
+def register_file(parsl_task) -> ParslFileToLegion:
     """Generates a tuple (parsl_task.filepath, stage, cache) to give to
     legion. cache is always True.
     stage is True if the file has a relative path. (i.e., not
@@ -261,6 +261,7 @@ def _legion_submit_wait(
                 input_files += [register_file(f) for f in parsl_ready_task.args if isinstance(f, File)]
                 
                 for kwarg, maybe_file in parsl_ready_task.kwargs.items():
+                    logger.debug(f"check kwarg {kwarg}({type(kwarg)}), maybe_file {maybe_file}({type(maybe_file)})")
                     # Add appropriate input and output files from "stdout" and "stderr" keyword arguments
                     if kwarg == "stdout" or kwarg == "stderr":
                         if maybe_file:
