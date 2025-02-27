@@ -1,0 +1,4 @@
+[submodule "parsl/executors/legion/flexflow"]
+	path = parsl/executors/legion/flexflow
+	url = git@github.com:netlab-hpc-project/flexflow.git
+	branch = pytorch

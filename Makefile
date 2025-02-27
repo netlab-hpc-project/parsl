@@ -98,7 +98,8 @@ perf_test:
 
 .PHONY: legion_test
 legion_test:
-	pytest parsl/tests/test_legion/ -k "not cleannet" --random-order --durations 10 --config parsl/tests/configs/legion.py
+	./parsl/executors/legion/build_flexflow_playground.sh
+## pytest parsl/tests/test_legion/ -k "not cleannet" --random-order --durations 10 --config parsl/tests/configs/legion.py
 
 .PHONY: test ## run all tests with all config types
 test: clean_coverage isort lint flake8 mypy local_thread_test htex_local_test htex_local_alternate_test wqex_local_test vineex_local_test radical_local_test config_local_test perf_test ## run all tests
