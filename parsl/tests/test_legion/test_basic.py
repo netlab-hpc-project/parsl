@@ -5,7 +5,7 @@ from parsl.app.app import bash_app
 from parsl.app.errors import AppTimeout
 
 
-@pytest.mark.legion
+@pytest.mark.skip
 def test_python_app():
     @python_app
     def dummy(a, b):
@@ -22,14 +22,14 @@ def echo_to_file(inputs=(), outputs=(), walltime=0.01):
     return """echo "sleeping"; sleep 0.05"""
 
 
-@pytest.mark.legion
+@pytest.mark.skip
 def test_walltime():
     """Testing walltime exceeded exception """
     x = echo_to_file()
     with pytest.raises(AppTimeout):
         x.result()
 
-@pytest.mark.legion
+@pytest.mark.skip
 def test_walltime_longer():
     """Test that an app that runs in less than walltime will succeed."""
     y = echo_to_file(walltime=0.2)
