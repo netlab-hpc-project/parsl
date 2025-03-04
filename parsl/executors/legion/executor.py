@@ -532,60 +532,42 @@ class LegionExecutor(BlockProviderExecutor, RepresentationMixin):
         self._finished_task_queue.join_thread()
 
         logger.debug("Legion shutdown completed")
-        
+    
     @wrap_with_logs
     def _collect_legion_results(self):
         logger.debug("Starting Legion result collector Thread")
-        
+
         try:
             while not self._should_stop.is_set():
                 if not self._submit_process.is_alive():
                     raise ExecutorError(self, "Legion Submit Process is not alive")
-                
+
                 try:
                     task_report: ParslFinishTask = self._finished_task_queue.get(timeout=1)
                 except queue.Empty:
                     continue
+
+                task_id = int(task_report.parsl_executor_id)
+                logger.debug(f"check task_report.parsl_executor_id: {task_id}, type: {type(task_id)}")
                 
-                logger.debug(f"check task_report.parsl_executor_id: {task_report.parsl_executor_id}, type: {type(task_report.parsl_executor_id)}")
                 with self._tasks_lock:
-                    logger.debug(f"pop future for task {task_report.parsl_executor_id}, check self.tasks: {self.tasks}")
-                    future = self.tasks.pop(int(task_report.parsl_executor_id))
-            
-                logger.debug(f'Updating Future for Parsl Task: {task_report.parsl_executor_id}. \
-                               Task {task_report.parsl_executor_id} has result_received set to {task_report.result_received}')
-                if task_report.result_received:
-                    try:
-                        with open(task_report.result_file, 'rb') as f_in:  
-                            result = deserialize(f_in.read())
-                    except Exception as e:
-                        logger.error(f'Cannot load result from result file {task_report.result_file}. Exception: {e}')
-                        ex = LegionTaskFailure('Cannot load result from result file', None)
-                        ex.__cause__ = e
-                        future.set_exception(ex)
+                    logger.debug(f"pop future for task {task_id}, check self.tasks: {self.tasks}")
+                    
+                    # 添加安全检查
+                    if task_id not in self.tasks:
+                        logger.warning(f"Task {task_id} not found in tasks dictionary - may have been already processed")
+                        continue
+                        
+                    future = self.tasks.pop(task_id)
+                    
+                    # 更新任务状态
+                    if task_report.success:
+                        future.set_result(task_report.result)
                     else:
-                        if isinstance(result, Exception):
-                            ex = LegionTaskFailure('Task execution raises an exception', result)
-                            ex.__cause__ = result
-                            future.set_exception(ex)
-                        else:
-                            future.set_result(result)
-                else:
-                    # If there are no results, then the task failed according to one of
-                    # legion modes, such as resource exhaustion.
-                    ex = LegionTaskFailure(task_report.reason, None)
-                    future.set_exception(ex)
-            
-                # decrement outstanding task counter
-                with self._outstanding_tasks_lock:
-                    self._outstanding_tasks -= 1
-        finally:
-            logger.debug(f"Marking all {self.outstanding} outstanding tasks as failed")
-            logger.debug("Acquiring tasks_lock")
-            with self._tasks_lock:
-                logger.debug("Acquired tasks_lock")
-                # set exception for tasks waiting for results that legion did not execute
-                for fu in self.tasks.values():
-                    if not fu.done():
-                        fu.set_exception(LegionRuntimeFailure("legion executor failed to execute the task."))
-        logger.debug("Exiting Collector Thread")
+                        future.set_exception(LegionRuntimeFailure("legion executor failed to execute the task."))
+                        
+                    logger.debug(f"Updated future for task {task_id}. Task has result_received set to True")
+                    
+        except Exception as e:
+            logger.error(f"Error in result collector: {str(e)}")
+            self._handle_executor_error(e)
