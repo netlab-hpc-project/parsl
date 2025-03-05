@@ -72,11 +72,11 @@ class TestFibonacci:
         
         # 测试完成后不需要再做任何事情，因为metrics已经被测试函数填充
     
-    # @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30])
-    # def test_fibonacci_sequence_correctness(self, num_terms):
-    #     """Test that the calculated Fibonacci sequence is correct."""
-    #     result = calculate_fibonacci(num_terms)
-    #     assert result == self.FIBONACCI_50[:num_terms]
+    @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30])
+    def test_fibonacci_sequence_correctness(self, num_terms):
+        """Test that the calculated Fibonacci sequence is correct."""
+        result = calculate_fibonacci(num_terms)
+        assert result == self.FIBONACCI_50[:num_terms]
     
     @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
     def test_fibonacci_performance(self, num_terms, performance_metrics):

@@ -34,7 +34,7 @@ def run_legion_server():
 
 def run_test():
     """在mamba环境中运行测试"""
-    cmd = "mamba run -n parsl_py38 pytest parsl/tests/test_python_apps/test_fibonacci_iterative.py --config parsl/tests/configs/legion.py -v -s"
+    cmd = "mamba run -n parsl_py38 pytest parsl/tests/test_python_apps/test_allreduce.py --config parsl/tests/configs/legion.py -v -s"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     return result.stdout, result.returncode
 
@@ -43,10 +43,10 @@ def send_feishu_notification(test_output, cpu_nums, np_nums, status):
     """发送飞书通知"""
     title = "Legion Test Report"
     subtitle = f"CPU Nums: {cpu_nums}, NP Nums: {np_nums}"
-    content = f"Test Output:\n{test_output}"
+    content = f"Test Output:\n{test_output}" if status == 0 else test_output
     if status == 0:
         tag = "Finish"
-    elif status == -128:
+    elif status == -256:
         tag = "Start"
     else:
         tag = "Error"
@@ -58,10 +58,12 @@ def main():
     # 测试配置组合
     # (CPU nums, NP nums)
     configs = [
-        # (4, 4),
-        # (8, 8),
-        # (16, 16),
-        (24, 24)
+        (24, 24),
+        (16, 16),
+        (8, 8),
+        (4, 4),
+        (2, 2),
+        (1, 1),
     ]
     
     for cpu_nums, np_nums in configs:
@@ -76,7 +78,7 @@ def main():
         
         try:
             # 发送通知
-            send_feishu_notification("Legion server started", cpu_nums, np_nums, -128)
+            send_feishu_notification("Legion server started", cpu_nums, np_nums, -256)
             
             # 运行测试
             test_output, status = run_test()
@@ -84,7 +86,7 @@ def main():
             
             # 发送通知
             # ```bash\n + test_output + \n```
-            test_output = f"```bash\n{test_output}\n```"
+            # test_output = f"```bash\n{test_output}\n```"
             send_feishu_notification(test_output, cpu_nums, np_nums, status)
             
         finally:
