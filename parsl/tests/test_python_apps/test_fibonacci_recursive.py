@@ -1,37 +1,3 @@
-# from parsl.app.app import join_app, python_app
-
-
-# @python_app
-# def add(*args):
-#     """Add all of the arguments together. If no arguments, then
-#     zero is returned (the neutral element of +)
-#     """
-#     accumulator = 0
-#     for v in args:
-#         accumulator += v
-#     return accumulator
-
-
-# @join_app
-# def fibonacci(n):
-#     if n == 0:
-#         return add()
-#     elif n == 1:
-#         return add(1)
-#     else:
-#         return add(fibonacci(n - 1), fibonacci(n - 2))
-
-
-# def test_fibonacci():
-#     print("Testing fibonacci(0):", fibonacci(0).result())
-#     assert fibonacci(0).result() == 0
-    
-#     print("Testing fibonacci(4):", fibonacci(4).result())
-#     assert fibonacci(4).result() == 3
-    
-#     print("Testing fibonacci(6):", fibonacci(6).result())
-#     assert fibonacci(6).result() == 8
-
 import time
 import psutil
 import pytest
@@ -79,9 +45,11 @@ def measure_performance():
     return _measure_performance
 
 def test_fibonacci_performance(measure_performance):
+    FIBONACCI_RESULTS_20 = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181]
     for n in [0, 4, 6, 10, 20]:
         result, elapsed_time, cpu_time_user, cpu_time_system = measure_performance(n)
         print(f"Fibonacci({n}) = {result}")
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
         print(f"User CPU time: {cpu_time_user:.4f} seconds")
         print(f"System CPU time: {cpu_time_system:.4f} seconds")
+        assert result == FIBONACCI_RESULTS_20[n]
