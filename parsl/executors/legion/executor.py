@@ -214,6 +214,10 @@ def register_file(parsl_task) -> ParslFileToLegion:
 
     return ParslFileToLegion(parsl_task.filepath)
 
+'''
+    Legion Executor Process
+    作用：负责将Parsl任务提交到Legion Runtime中，并且等待Legion Runtime返回任务结果
+'''
 @wrap_with_logs
 def _legion_submit_wait(
         ready_task_queue: 'multiprocessing.Queue[ParslReadyTask]' = None,
@@ -331,140 +335,6 @@ def _legion_submit_wait(
         time.sleep(0.1)
             
     logger.debug("Legion submit/wait process ending")
-    
-# @wrap_with_logs
-# def _legion_submit_wait(
-    #     ready_task_queue: 'multiprocessing.Queue[ParslReadyTask]' = None,
-    #     finished_task_queue: 'multiprocessing.Queue[ParslFinishTask]' = None,
-    #     should_stop: Optional[multiprocessing.Event] = None,
-    #     legion_runtime_json_path: Optional[str] = None,
-    #     function_data_dir: Optional[tempfile.TemporaryDirectory] = None,
-    #     legion_queue_dir: Optional[str] = None):
-    
-    # logger.debug("Starting Legion Submit/Wait Process")
-    # setproctitle("parsl: Legion submit/wait")
-    
-    # legion_queue = RobustFsQueue(legion_queue_dir)
-    
-    # # Get parent pid, useful to shutdown this process when its parent, the legion
-    # # executor process, exits.
-    # orig_ppid = os.getppid()
-        
-    
-    # # main loop，不断从ready_task_queue中读取任务，提交给Legion Runtime
-    # while not should_stop.is_set():
-    #     # Check if executor process is still running
-    #     ppid = os.getppid()
-    #     if ppid != orig_ppid:
-    #         logger.debug("Executor process is detected to have exited. Exiting..")
-    #         break
-        
-    #     while ready_task_queue.qsize() > 0 and not should_stop.is_set():
-    #         try:
-    #             parsl_ready_task: ParslReadyTask = ready_task_queue.get(timeout=1)
-    #         except:
-    #             logger.error("Queue is empty")
-    #             raise 
-            
-    #         try:
-    #             # 开始处理input和output的文件
-    #             input_files = []
-    #             output_files = []
-
-    #             # Determine whether to stage input files that will exist at the workers
-    #             # Input and output files are always cached
-    #             input_files += [register_file(f) for f in parsl_ready_task.kwargs.get("inputs", []) if isinstance(f, File)]
-    #             output_files += [register_file(f) for f in parsl_ready_task.kwargs.get("outputs", []) if isinstance(f, File)]
-
-    #             # Also consider any *arg that looks like a file as an input:
-    #             input_files += [register_file(f) for f in parsl_ready_task.args if isinstance(f, File)]
-                
-    #             for kwarg, maybe_file in parsl_ready_task.kwargs.items():
-    #                 logger.debug(f"check kwarg {kwarg}({type(kwarg)}), maybe_file {maybe_file}({type(maybe_file)})")
-    #                 # Add appropriate input and output files from "stdout" and "stderr" keyword arguments
-    #                 if kwarg == "stdout" or kwarg == "stderr":
-    #                     if maybe_file:
-    #                         output_files.append(std_output_to_legion(kwarg, maybe_file))
-    #                 # For any other keyword that looks like a file, assume it is an input file
-    #                 elif isinstance(maybe_file, File):
-    #                     input_files.append(register_file(maybe_file))
-
-    #             logger.debug("Process input_files and output_files finished!")
-                    
-    #             # Setup files to be used on a worker to execute the function
-    #             function_file = None
-    #             argument_file = None
-    #             result_file = None
-    #             map_file = None
-
-    #             # Get path to files that will contain the pickled function,
-    #             # arguments, result, and map of input and output files
-    #             function_file = path_in_task(function_data_dir.name, parsl_ready_task.executor_id, "function")
-    #             argument_file = path_in_task(function_data_dir.name, parsl_ready_task.executor_id, "argument")
-    #             result_file = path_in_task(function_data_dir.name, parsl_ready_task.executor_id, "result")
-    #             map_file = path_in_task(function_data_dir.name, parsl_ready_task.executor_id, "map")
-                
-    #             logger.debug("Create executor task {} with function at: {}, argument at: {}, \
-    #                     and result to be found at: {} finished!".format(parsl_ready_task.executor_id, function_file, argument_file, result_file))
-
-    #             # Serialize function object and arguments, separately
-    #             serialize_object_to_file(function_file, deserialize(parsl_ready_task.serialize_func))
-    #             args_dict = {'args': parsl_ready_task.args, 'kwargs': parsl_ready_task.kwargs}
-    #             serialize_object_to_file(argument_file, args_dict)
-
-    #             # Construct the map file of local filenames at worker
-    #             construct_map_file(map_file, input_files, output_files)
-                
-    #             # Create message to put into the message queue
-    #             logger.debug("Placing task {} on message queue".format(parsl_ready_task.executor_id))
-                
-    #             logger.debug("Removing executor task from queue")
-    #         except:
-    #             logger.error("Process: input / output / function / argument / result / map failed")
-    #             raise
-            
-    #         try:
-    #             legion_executor_id, _ = submit_task_to_legion(parsl_ready_task.executor_id,
-    #                 input_files, output_files, parsl_ready_task.resource_specification,
-    #                 function_file, argument_file, result_file, map_file, legion_runtime_json_path)
-    #             logger.debug(f"Submitted executor task to Legion (in Legion id: {legion_executor_id})")
-                
-    #         except Exception as e:
-    #             logger.error("Unable to submit task to legion: {}".format(e))
-    #             finished_task_queue.put_nowait(ParslFinishTask(executor_id=parsl_ready_task.executor_id,
-    #                                                            result_received=False,
-    #                                                            result_file=None,
-    #                                                            reason="task could not be submited to legion",
-    #                                                            status=-1))
-    #             continue
-    #         logger.debug("Executor Parsl task {} submitted as Legion task with id {}".format(parsl_ready_task.executor_id, legion_executor_id))
-            
-    #     # while not should_stop.is_set():
-    #     #     task_msg = get_task_from_legion(legion_queue, 0.5)
-    #     #     # TODO(xlc): 奇怪的bug, legion_task_map经常为空
-    #     #     if task_msg == None:
-    #     #         break 
-    #     while not should_stop.is_set():
-    #         task_msg = get_task_from_legion(legion_queue, 0.5)
-    #         if task_msg == None:
-    #             continue  # 继续下一次循环，而不是跳出循环
-    #         logger.debug(f"completed Legion executor task: {task_msg.executor_id}")
-            
-    #         if os.path.exists(task_msg.result_file):
-    #             logger.debug("Found result in {}".format(task_msg.result_file))
-    #             finished_task_queue.put_nowait(ParslFinishTask(executor_id=int(task_msg.parsl_executor_id),
-    #                                                            result_received=True,
-    #                                                            result_file=task_msg.result_file,
-    #                                                            reason=None,
-    #                                                            status=0))
-    #         else:
-    #             logger.debug("Did not find result in {}".format(task_msg.result_file))
-    #             finished_task_queue.put_nowait(ParslFinishTask(executor_id=int(task_msg.parsl_executor_id),
-    #                                                            result_received=False,
-    #                                                            result_file=None,
-    #                                                            reason="task could not find the result file",
-    #                                                            status=-2))
-    # logger.debug("_legion_submit_wait Finished")
 
 class LegionExecutor(BlockProviderExecutor, RepresentationMixin):
     """
