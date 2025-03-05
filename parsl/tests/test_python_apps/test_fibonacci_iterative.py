@@ -31,8 +31,8 @@ def calculate_fibonacci(num):
 
 class TestFibonacci:
     
-    # Known first 20 Fibonacci numbers
-    FIBONACCI_30 = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229]
+    # Known first 50 Fibonacci numbers
+    FIBONACCI_50 = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170, 1836311903, 2971215073, 4807526976, 7778742049]
     
     @pytest.fixture
     def performance_metrics(self):
@@ -72,13 +72,13 @@ class TestFibonacci:
         
         # 测试完成后不需要再做任何事情，因为metrics已经被测试函数填充
     
-    @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30])
-    def test_fibonacci_sequence_correctness(self, num_terms):
-        """Test that the calculated Fibonacci sequence is correct."""
-        result = calculate_fibonacci(num_terms)
-        assert result == self.FIBONACCI_30[:num_terms]
+    # @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30])
+    # def test_fibonacci_sequence_correctness(self, num_terms):
+    #     """Test that the calculated Fibonacci sequence is correct."""
+    #     result = calculate_fibonacci(num_terms)
+    #     assert result == self.FIBONACCI_50[:num_terms]
     
-    @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30])
+    @pytest.mark.parametrize("num_terms", [5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
     def test_fibonacci_performance(self, num_terms, performance_metrics):
         """Test performance metrics when calculating Fibonacci sequence."""
         # 手动测量性能
@@ -102,7 +102,7 @@ class TestFibonacci:
         performance_metrics["cpu_system"] = end_cpu.system - start_cpu.system
         
         # 验证结果
-        assert result == self.FIBONACCI_30[:num_terms]
+        assert result == self.FIBONACCI_50[:num_terms]
         
         # 输出性能指标
         print(f"\nPerformance metrics for {num_terms} Fibonacci numbers:")

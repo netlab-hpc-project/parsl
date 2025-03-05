@@ -123,3 +123,6 @@ ENV/
 
 # emacs buffers
 \#*
+
+# 有我apikey的飞书文件
+utils/send_feishu.py

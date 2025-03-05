@@ -1,7 +1,10 @@
 import sys
 import traceback
+import logging
 
 from parsl.app.errors import RemoteExceptionWrapper
+
+log = logging.getLogger(__name__)
 from parsl.data_provider.files import File
 from parsl.serialize import deserialize, serialize
 from parsl.utils import get_std_fname_mode
@@ -124,7 +127,7 @@ def load_function(map_file, function_file, argument_file):
 
     mapping = unpack_object_from_file(map_file)
     remap_all_files(mapping, fn_args, fn_kwargs)
-    print(f"In load_function function => fn: {fn}, fn_args: {fn_args}, fn_kwargs: {fn_kwargs}, fn_name: {fn_name}, mapping: {mapping}.")
+    log.debug(f"In load_function function => fn: {fn}, fn_args: {fn_args}, fn_kwargs: {fn_kwargs}, fn_name: {fn_name}, mapping: {mapping}.")
 
     # Create the namespace to isolate the function execution.
     user_ns = locals()
